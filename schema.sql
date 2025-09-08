@@ -5,7 +5,8 @@ USE timetable_system;
 -- 1. Departments
 CREATE TABLE departments (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    name VARCHAR(100) NOT NULL
+    name VARCHAR(100) NOT NULL,
+    color VARCHAR(16) NOT NULL DEFAULT 'FFF'
 );
 
 -- 2. Users
@@ -16,6 +17,7 @@ CREATE TABLE users (
     password_hash VARCHAR(255) NOT NULL,
     role ENUM('admin', 'employee') NOT NULL DEFAULT 'employee',
     department_id INT,
+    hpw INT NOT NULL, -- (NEW) (Hours worked per week)
     FOREIGN KEY (department_id) REFERENCES departments(id) ON DELETE SET NULL
 );
 
@@ -47,18 +49,11 @@ CREATE TABLE leave_requests (
     end_date DATE NOT NULL,
     reason TEXT,
     status ENUM('pending', 'approved', 'denied') DEFAULT 'pending',
+    CP BOOLEAN NOT NULL, -- (NEW) (Congés Payés ou pas)
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
--- 6. Availability
-CREATE TABLE availability (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    user_id INT NOT NULL,
-    day_of_week ENUM('Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday') NOT NULL,
-    available BOOLEAN DEFAULT TRUE,
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-);
 
 -- 7. Logs
 CREATE TABLE logs (

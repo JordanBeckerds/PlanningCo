@@ -113,7 +113,7 @@ $requestsTreated = $stmtTreated->fetchAll(PDO::FETCH_ASSOC);
 <?php require_once '../includes/head.php'; ?>
 <?php require_once '../includes/header.php'; ?>
 
-<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-10">
+<div class="max-w-7xl min-h-[74vh] mx-auto px-4 sm:px-6 lg:px-8 mt-10">
 
     <h1 class="text-3xl font-bold mb-6">Gestion des demandes de congé</h1>
 

@@ -17,7 +17,7 @@ require_once '../includes/head.php';
 require_once '../includes/header.php';
 ?>
 
-<div class="container mx-auto p-4">
+<div class="container mx-auto p-4 min-h-[78vh]">
     <h1 class="text-2xl font-bold mb-4">Gestion des Plages Horaires (Shifts)</h1>
 
     <?php if ($success_msg): ?>

@@ -18,6 +18,7 @@ $name = '';
 $email = '';
 $role = 'employee';
 $department_id = '';
+$hpw = '';
 
 // Récupérer les départements pour le select
 try {
@@ -36,6 +37,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $department_id = $_POST['department_id'] ?? null;
     $password = $_POST['password'] ?? '';
     $password_confirm = $_POST['password_confirm'] ?? '';
+    $hpw = trim($_POST['hpw'] ?? '');
 
     if ($name === '') {
         $errors[] = "Le nom est obligatoire.";
@@ -43,7 +45,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
         $errors[] = "L'adresse email n'est pas valide.";
     }
-    if (!in_array($role, ['admin', 'employee'])) {
+    if (!in_array($role, ['admin', 'employee', 'manager'])) {
         $errors[] = "Rôle invalide.";
     }
     if ($department_id !== null && $department_id !== '' && !is_numeric($department_id)) {
@@ -54,6 +56,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
     if ($password !== $password_confirm) {
         $errors[] = "Les mots de passe ne correspondent pas.";
+    }
+    if ($hpw === '' || !is_numeric($hpw) || (int)$hpw <= 0) {
+        $errors[] = "Les heures par semaine doivent être un nombre positif.";
     }
 
     // Vérifier unicité email
@@ -67,19 +72,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         try {
             $password_hash = password_hash($password, PASSWORD_DEFAULT);
 
-            $stmt_insert = $pdo->prepare("INSERT INTO users (name, email, password_hash, role, department_id) VALUES (:name, :email, :password_hash, :role, :department)");
+            $stmt_insert = $pdo->prepare("
+                INSERT INTO users (name, email, password_hash, role, department_id, hpw)
+                VALUES (:name, :email, :password_hash, :role, :department, :hpw)
+            ");
             $stmt_insert->execute([
                 'name' => $name,
                 'email' => $email,
                 'password_hash' => $password_hash,
                 'role' => $role,
-                'department' => $department_id !== '' ? $department_id : null
+                'department' => $department_id !== '' ? $department_id : null,
+                'hpw' => (int)$hpw
             ]);
 
             echo "<p class='bg-green-100 text-green-800 p-3 rounded mb-4'>Utilisateur créé avec succès.</p>";
 
             // Reset form
-            $name = $email = '';
+            $name = $email = $hpw = '';
             $role = 'employee';
             $department_id = '';
         } catch (PDOException $e) {
@@ -89,7 +98,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 ?>
 
-<div class="w-full px-4 sm:px-6 lg:px-8 max-w-3xl mx-auto mt-6">
+<div class="w-full px-4 sm:px-6 lg:px-8 max-w-3xl mx-auto mt-6 min-h-[75vh]">
     <div class="bg-white p-4 sm:p-6 rounded shadow">
         <h1 class="text-xl sm:text-2xl font-bold mb-4 text-indigo-700">Créer un nouvel utilisateur</h1>
 
@@ -136,6 +145,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500">
                     <option value="employee" <?= $role === 'employee' ? 'selected' : '' ?>>Employé</option>
                     <option value="admin" <?= $role === 'admin' ? 'selected' : '' ?>>Administrateur</option>
+                    <option value="manager" <?= $role === 'manager' ? 'selected' : '' ?>>Manager</option>
                 </select>
             </div>
 
@@ -150,6 +160,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         </option>
                     <?php endforeach; ?>
                 </select>
+            </div>
+
+            <div>
+                <label for="hpw" class="block font-medium mb-1">Heures par semaine (HPW)</label>
+                <input type="number" id="hpw" name="hpw" min="1" value="<?= htmlspecialchars($hpw) ?>" required
+                    class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500" />
             </div>
 
             <div class="pt-4 flex flex-col sm:flex-row sm:items-center sm:space-x-4 space-y-3 sm:space-y-0">

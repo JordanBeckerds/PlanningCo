@@ -35,7 +35,6 @@ $common_assignments = [];
 
 if (count($selected_employee_ids) > 0) {
     // 1. Trouver les shifts communs aux employés sélectionnés
-    // Requête pour trouver shifts communs à tous ces employés
     $in_placeholders = implode(',', array_fill(0, count($selected_employee_ids), '?'));
     $sql_common_shifts = "
         SELECT shift_id, COUNT(DISTINCT user_id) as cnt
@@ -50,13 +49,11 @@ if (count($selected_employee_ids) > 0) {
     $common_shift_ids = $stmt->fetchAll(PDO::FETCH_COLUMN, 0);
 
     if (count($common_shift_ids) > 0) {
-        // Récupérer détails des shifts communs
         $in_shifts = implode(',', array_fill(0, count($common_shift_ids), '?'));
         $stmt = $pdo->prepare("SELECT * FROM shifts WHERE id IN ($in_shifts)");
         $stmt->execute($common_shift_ids);
         $common_shifts = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-        // 2. Récupérer assignations communes (employés sélectionnés + shifts communs)
         $sql_assignments = "
             SELECT s.id, s.user_id, s.shift_id, s.work_date, u.name as user_name, sh.name as shift_name
             FROM schedules s
@@ -78,82 +75,82 @@ require_once '../includes/head.php';
 require_once '../includes/header.php';
 ?>
 
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-    <meta charset="UTF-8" />
-    <title>Gérer les assignations</title>
-    <link href="../assets/tailwind.css" rel="stylesheet" />
-</head>
-<body class="p-6 bg-gray-50">
+<div class="min-h-[80vh] p-6 bg-gray-50 flex flex-col items-center">
+    <h1 class="text-3xl font-bold text-gray-800 mb-6">Gérer les assignations</h1>
 
-<h1 class="text-xl sm:text-2xl font-bold mb-4">Gérer les assignations</h1>
-
-<form method="get" id="selectEmployeesForm" class="mb-6">
-    <label for="employees" class="font-semibold block mb-2">Sélectionnez un ou plusieurs employés :</label>
-    <select name="employees[]" id="employees"
-        multiple size="10"
-        class="border rounded p-2 w-full max-w-md sm:max-w-xs md:max-w-sm overflow-auto"
-        onchange="document.getElementById('selectEmployeesForm').submit()">
-        <?php foreach ($employees as $emp): ?>
-            <option value="<?= htmlspecialchars($emp['id']) ?>" <?= in_array($emp['id'], $selected_employee_ids) ? 'selected' : '' ?>>
-                <?= htmlspecialchars($emp['name']) ?>
-            </option>
-        <?php endforeach; ?>
-    </select>
-</form>
-
-<?php if (count($selected_employee_ids) > 0 && !empty($common_shifts)): ?>
-    <h2 class="text-lg sm:text-xl mt-6 mb-2 font-semibold">Shifts communs aux employés sélectionnés :</h2>
-    <ul class="mb-4 list-disc list-inside">
-        <?php foreach ($common_shifts as $shift): ?>
-            <li><?= htmlspecialchars($shift['name']) ?> (<?= htmlspecialchars($shift['start_time']) ?> - <?= htmlspecialchars($shift['end_time']) ?>)</li>
-        <?php endforeach; ?>
-    </ul>
-
-    <form method="post" onsubmit="return confirm('Voulez-vous vraiment supprimer les assignations sélectionnées ?');">
-        <input type="hidden" name="delete_assignments" value="1" />
-        <div class="overflow-x-auto">
-            <table class="min-w-full bg-white border border-gray-300 rounded text-sm">
-                <thead>
-                    <tr class="bg-gray-200 text-left">
-                        <th class="p-2 border-b"><input type="checkbox" id="selectAll" onclick="toggleAll(this)"/></th>
-                        <th class="p-2 border-b">Employé</th>
-                        <th class="p-2 border-b">Shift</th>
-                        <th class="p-2 border-b">Date</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php foreach ($common_assignments as $assign): ?>
-                        <tr class="hover:bg-gray-100">
-                            <td class="p-2 border-b text-center">
-                                <input type="checkbox" name="assignment_ids[]" value="<?= $assign['id'] ?>" />
-                            </td>
-                            <td class="p-2 border-b"><?= htmlspecialchars($assign['user_name']) ?></td>
-                            <td class="p-2 border-b"><?= htmlspecialchars($assign['shift_name']) ?></td>
-                            <td class="p-2 border-b"><?= htmlspecialchars($assign['work_date']) ?></td>
-                        </tr>
+    <div class="flex flex-col lg:flex-row w-full max-w-7xl gap-6">
+        <!-- Employee Selection -->
+        <div class="bg-white p-6 rounded-lg shadow-md w-full lg:w-1/3">
+            <h2 class="text-xl font-semibold mb-4">Sélectionnez des employés</h2>
+            <form method="get" id="selectEmployeesForm">
+                <select name="employees[]" id="employees" multiple size="10"
+                    class="border rounded p-3 h-[10vh] md:h-auto w-full overflow-auto focus:ring-2 focus:ring-blue-500"
+                    onchange="document.getElementById('selectEmployeesForm').submit()">
+                    <?php foreach ($employees as $emp): ?>
+                        <option value="<?= htmlspecialchars($emp['id']) ?>" <?= in_array($emp['id'], $selected_employee_ids) ? 'selected' : '' ?>>
+                            <?= htmlspecialchars($emp['name']) ?>
+                        </option>
                     <?php endforeach; ?>
-                </tbody>
-            </table>
+                </select>
+            </form>
         </div>
-        <button type="submit"
-            class="mt-3 w-full sm:w-auto px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700">
-            Supprimer les assignations sélectionnées
-        </button>
-    </form>
-<?php endif; ?>
 
-<script>
-    function toggleAll(source) {
-        checkboxes = document.querySelectorAll('input[name="assignment_ids[]"]');
-        checkboxes.forEach(cb => cb.checked = source.checked);
-    }
-</script>
+        <!-- Assignments Display -->
+        <div class="bg-white p-6 rounded-lg shadow-md w-full lg:w-2/3">
+            <?php if (!empty($common_shifts)): ?>
+                <h2 class="text-xl font-semibold mb-4">Shifts communs</h2>
+                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 mb-6">
+                    <?php foreach ($common_shifts as $shift): ?>
+                        <div class="bg-blue-50 p-4 rounded-lg border-l-4 border-blue-500">
+                            <h3 class="font-semibold text-blue-700"><?= htmlspecialchars($shift['name']) ?></h3>
+                            <p class="text-gray-600"><?= htmlspecialchars($shift['start_time']) ?> - <?= htmlspecialchars($shift['end_time']) ?></p>
+                        </div>
+                    <?php endforeach; ?>
+                </div>
+
+                <form method="post" onsubmit="return confirm('Voulez-vous vraiment supprimer les assignations sélectionnées ?');">
+                    <input type="hidden" name="delete_assignments" value="1" />
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200 text-sm">
+                            <thead class="bg-gray-100">
+                                <tr>
+                                    <th class="p-3 text-center"><input type="checkbox" id="selectAll" onclick="toggleAll(this)"/></th>
+                                    <th class="p-3 text-left">Employé</th>
+                                    <th class="p-3 text-left">Shift</th>
+                                    <th class="p-3 text-left">Date</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-200">
+                                <?php foreach ($common_assignments as $assign): ?>
+                                    <tr class="hover:bg-gray-50 transition">
+                                        <td class="p-2 text-center">
+                                            <input type="checkbox" name="assignment_ids[]" value="<?= $assign['id'] ?>" class="h-4 w-4 text-blue-600"/>
+                                        </td>
+                                        <td class="p-2"><?= htmlspecialchars($assign['user_name']) ?></td>
+                                        <td class="p-2"><?= htmlspecialchars($assign['shift_name']) ?></td>
+                                        <td class="p-2"><?= htmlspecialchars($assign['work_date']) ?></td>
+                                    </tr>
+                                <?php endforeach; ?>
+                            </tbody>
+                        </table>
+                    </div>
+                    <button type="submit" class="mt-4 px-6 py-2 bg-red-600 text-white font-semibold rounded hover:bg-red-700 transition">
+                        Supprimer les assignations sélectionnées
+                    </button>
+                </form>
+            <?php else: ?>
+                <p class="text-gray-500">Sélectionnez au moins un employé pour voir les shifts communs.</p>
+            <?php endif; ?>
+        </div>
+    </div>
+
+    <script>
+        function toggleAll(source) {
+            document.querySelectorAll('input[name="assignment_ids[]"]').forEach(cb => cb.checked = source.checked);
+        }
+    </script>
+</div>
 
 <?php
 require_once '../includes/footer.php';
 ?>
-
-</body>
-</html>
