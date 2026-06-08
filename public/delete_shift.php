@@ -1,11 +1,9 @@
 <?php
 session_start();
 require_once '../includes/db.php';
-
-if (!isset($_SESSION['user_id']) || $_SESSION['user_role'] !== 'admin') {
-    header('Location: login.php');
-    exit;
-}
+require_once '../includes/auth.php';
+require_once '../includes/functions.php';
+require_admin();
 
 $shift_id = $_GET['id'] ?? null;
 

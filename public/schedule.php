@@ -1,11 +1,9 @@
 <?php
 session_start();
 require_once '../includes/db.php';
-
-if (!isset($_SESSION['user_id']) || $_SESSION['user_role'] !== 'admin') {
-    header('Location: login.php');
-    exit;
-}
+require_once '../includes/auth.php';
+require_once '../includes/functions.php';
+require_admin();
 
 // Get current year, month, and optional selected day from URL
 $year = (int)($_GET['year'] ?? date('Y'));
@@ -128,10 +126,11 @@ if ($weekStart) {
         $schedulesByUserDate[$uid][$date][] = $sched;
     }
 }
-?>
 
-<?php require_once '../includes/head.php'; ?>
-<?php require_once '../includes/header.php'; ?>
+$page_title = 'Planning des Shifts - PlanningCo';
+require_once '../includes/head.php';
+require_once '../includes/header.php';
+?>
 
 <div class="container mx-auto px-4 py-6">
 
@@ -153,7 +152,7 @@ if ($weekStart) {
                     $firstMonday->modify('+7 days');
                 }
             ?>
-            <a href="schedule.php?day=<?= $firstMonday->format('Y-m-d') ?>" 
+            <a href="schedule.php?day=<?= h($firstMonday->format('Y-m-d')) ?>" 
                class="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg font-semibold hover:bg-gray-300 transition">
                 Voir la Semaine
             </a>
@@ -164,11 +163,11 @@ if ($weekStart) {
     <?php if (!$weekStart): ?>
         <div class="my-6 w-full h-[10vh] flex justify-center items-center overflow-x-auto">
             <div class="flex gap-6 min-w-max">
-                <a href="<?= buildUrlMonth($prevMonth->format('Y'), $prevMonth->format('m')) ?>"
+                <a href="<?= h(buildUrlMonth($prevMonth->format('Y'), $prevMonth->format('m'))) ?>"
                    class="md:px-6 md:py-3 px-3 py-3 bg-indigo-600 text-white rounded-lg shadow hover:bg-indigo-700 transition font-semibold whitespace-nowrap text-xs min-w-[7.5vw] text-center">
-                    &larr; Mois Précédent
+                    &larr; Mois Pr&eacute;c&eacute;dent
                 </a>
-                <a href="<?= buildUrlMonth($nextMonth->format('Y'), $nextMonth->format('m')) ?>"
+                <a href="<?= h(buildUrlMonth($nextMonth->format('Y'), $nextMonth->format('m'))) ?>"
                    class="md:px-6 md:py-3 px-3 py-3 bg-indigo-600 text-white rounded-lg shadow hover:bg-indigo-700 transition font-semibold whitespace-nowrap text-xs min-w-[7.5vw] text-center">
                     Mois Suivant &rarr;
                 </a>
@@ -183,7 +182,7 @@ if ($weekStart) {
                 <?php 
                 $daysOfWeek = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'];
                 foreach ($daysOfWeek as $dayName): ?>
-                    <div class="font-bold py-2 border-b border-gray-300 bg-gray-100 text-xs sm:text-sm"><?= $dayName ?></div>
+                    <div class="font-bold py-2 border-b border-gray-300 bg-gray-100 text-xs sm:text-sm"><?= h($dayName) ?></div>
                 <?php endforeach; ?>
 
                 <?php foreach ($weeks as $week): ?>
@@ -196,8 +195,8 @@ if ($weekStart) {
                             class="min-h-[100px] sm:min-h-[120px] border border-gray-300 p-1 sm:p-2 cursor-pointer rounded-lg
                             <?= $isCurrentMonth ? 'hover:bg-indigo-50' : 'bg-gray-100 text-gray-400' ?>
                             <?= $isToday ? 'bg-indigo-100 border-indigo-500' : '' ?>"
-                            onclick="location.href='schedule.php?day=<?= $dateStr ?>'">
-                            <div class="text-right font-semibold text-sm sm:text-base"><?= $day->format('j') ?></div>
+                            onclick="location.href='schedule.php?day=<?= h($dateStr) ?>'">
+                            <div class="text-right font-semibold text-sm sm:text-base"><?= h($day->format('j')) ?></div>
                             <div class="mt-1 sm:mt-2 space-y-1 text-left text-xs sm:text-sm max-h-20 sm:max-h-24">
                                 <?php if (isset($monthSchedules[$dateStr])): ?>
                                     <?php
@@ -207,13 +206,13 @@ if ($weekStart) {
                                         $extraCount = $totalCount - $displayCount;
                                     ?>
                                     <?php for ($i = 0; $i < min($totalCount, $displayCount); $i++): ?>
-                                        <div><?= htmlspecialchars($usersForDay[$i]) ?></div>
+                                        <div><?= h($usersForDay[$i]) ?></div>
                                     <?php endfor; ?>
                                     <?php if ($extraCount > 0): ?>
-                                        <div class="text-indigo-600 font-semibold">+<?= $extraCount ?></div>
+                                        <div class="text-indigo-600 font-semibold">+<?= h($extraCount) ?></div>
                                     <?php endif; ?>
                                 <?php else: ?>
-                                    <div class="text-gray-400 italic">Aucun employé</div>
+                                    <div class="text-gray-400 italic">Aucun employ&eacute;</div>
                                 <?php endif; ?>
                             </div>
                         </div>
@@ -228,11 +227,11 @@ if ($weekStart) {
 <div class="min-h-[61vh]">
     <div class="my-6 w-full h-[10vh] flex justify-center items-center overflow-x-auto">
         <div class="flex gap-6 min-w-max">
-            <a href="<?= buildUrlWeek($prevWeekStart) ?>"
+            <a href="<?= h(buildUrlWeek($prevWeekStart)) ?>"
                class="px-3 py-3 bg-indigo-600 text-white rounded-lg shadow hover:bg-indigo-700 transition font-semibold whitespace-nowrap text-xs min-w-[8vw] text-center">
-                &larr; Semaine Précédente
+                &larr; Semaine Pr&eacute;c&eacute;dente
             </a>
-            <a href="<?= buildUrlWeek($nextWeekStart) ?>"
+            <a href="<?= h(buildUrlWeek($nextWeekStart)) ?>"
                class="px-3 py-3 bg-indigo-600 text-white rounded-lg shadow hover:bg-indigo-700 transition font-semibold whitespace-nowrap text-xs min-w-[8vw] text-center">
                 Semaine Suivante &rarr;
             </a>
@@ -244,14 +243,14 @@ if ($weekStart) {
             <table class="min-w-full border-collapse">
                 <thead class="bg-gray-100">
                     <tr>
-                        <th class="border border-gray-300 px-3 py-2 sticky left-0 bg-gray-100 z-20 text-xs sm:text-sm whitespace-nowrap">Employé</th>
+                        <th class="border border-gray-300 px-3 py-2 sticky left-0 bg-gray-100 z-20 text-xs sm:text-sm whitespace-nowrap">Employ&eacute;</th>
                         <?php
                         $weekDays = [];
                         for ($i = 0; $i < 7; $i++) {
                             $d = clone $weekStart;
                             $d->modify("+$i day");
                             $weekDays[] = $d;
-                            echo '<th class="border border-gray-300 px-3 py-2 text-xs sm:text-sm">' . $d->format('D j') . '</th>';
+                            echo '<th class="border border-gray-300 px-3 py-2 text-xs sm:text-sm">' . h($d->format('D j')) . '</th>';
                         }
                         ?>
                         <th class="border border-gray-300 px-3 py-2 text-xs sm:text-sm">Total Heures</th>
@@ -263,7 +262,7 @@ if ($weekStart) {
                         $weeklyTotalHours = 0;
                     ?>
                     <tr class="hover:bg-gray-50 transition">
-                        <td class="border border-gray-300 px-3 py-2 sticky left-0 bg-gray-50 z-10 text-xs sm:text-sm font-medium"><?= htmlspecialchars($user['name']) ?></td>
+                        <td class="border border-gray-300 px-3 py-2 sticky left-0 bg-gray-50 z-10 text-xs sm:text-sm font-medium"><?= h($user['name']) ?></td>
                         <?php foreach ($weekDays as $day):
                             $dateStr = $day->format('Y-m-d');
                             $shiftsForDay = $schedulesByUserDate[$uid][$dateStr] ?? [];
@@ -277,9 +276,9 @@ if ($weekStart) {
                                 $dailyHours += $hours;
                             ?>
                             <div class="bg-indigo-100 text-indigo-900 rounded-lg px-2 py-1 mb-1 shadow-sm hover:shadow-md transition relative group cursor-pointer">
-                                <?= $start->format('H:i') ?>-<?= $end->format('H:i') ?>
+                                <?= h($start->format('H:i')) ?>-<?= h($end->format('H:i')) ?>
                                 <span class="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 bg-gray-700 text-white text-xs rounded px-1 py-0.5 opacity-0 group-hover:opacity-100 transition">
-                                    <?= number_format($hours, 2) ?>h
+                                    <?= h(number_format($hours, 2)) ?>h
                                 </span>
                             </div>
                             <?php endforeach; ?>
@@ -288,12 +287,12 @@ if ($weekStart) {
                             $weeklyTotalHours += $dailyHours;
                         endforeach; 
                         
-                        $expectedHours = htmlspecialchars($user['hpw']);
+                        $expectedHours = (int)$user['hpw'];
                         $bgColor = $weeklyTotalHours == $expectedHours ? 'from-green-300 to-green-400' :
                                    ($weeklyTotalHours < $expectedHours ? 'from-orange-300 to-orange-400' : 'from-red-300 to-red-400');
                         ?>
-                        <td class="border border-gray-300 px-3 py-2 text-xs sm:text-sm font-semibold text-center bg-gradient-to-r <?= $bgColor ?>">
-                            <?= number_format($weeklyTotalHours, 2) ?>h
+                        <td class="border border-gray-300 px-3 py-2 text-xs sm:text-sm font-semibold text-center bg-gradient-to-r <?= h($bgColor) ?>">
+                            <?= h(number_format($weeklyTotalHours, 2)) ?>h
                         </td>
                     </tr>
                     <?php endforeach; ?>

@@ -1,11 +1,9 @@
 <?php
 session_start();
 require_once '../includes/db.php';
-
-if (!isset($_SESSION['user_id']) || $_SESSION['user_role'] !== 'employee') {
-    header('Location: ../public/login.php');
-    exit;
-}
+require_once '../includes/auth.php';
+require_once '../includes/functions.php';
+require_login();
 
 $user_id = $_SESSION['user_id'];
 $error = '';
@@ -37,7 +35,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['start_date'], $_POST[
     if (!$start_date || !$end_date) {
         $error = 'Veuillez renseigner les deux dates.';
     } elseif ($start_date > $end_date) {
-        $error = 'La date de début doit être antérieure ou égale à la date de fin.';
+        $error = 'La date de d&eacute;but doit &ecirc;tre ant&eacute;rieure ou &eacute;gale &agrave; la date de fin.';
     } else {
         $stmt = $pdo->prepare("
             SELECT COUNT(*) FROM leave_requests 
@@ -46,90 +44,60 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['start_date'], $_POST[
               AND id != :current_id
               AND NOT (end_date < :start_date OR start_date > :end_date)
         ");
-        $stmt->execute([
-            'user_id' => $user_id,
-            'current_id' => $request_id,
-            'start_date' => $start_date,
-            'end_date' => $end_date,
-        ]);
+        $stmt->execute(['user_id' => $user_id, 'current_id' => $request_id, 'start_date' => $start_date, 'end_date' => $end_date]);
         $count = $stmt->fetchColumn();
 
         if ($count > 0) {
-            $error = "Vous avez déjà une demande de congé en attente ou chevauchante sur cette période.";
+            $error = 'Vous avez d&eacute;j&agrave; une demande de cong&eacute; en attente ou chevauchante sur cette p&eacute;riode.';
         } else {
             $stmt = $pdo->prepare("
                 UPDATE leave_requests 
                 SET start_date = :start_date, end_date = :end_date, reason = :reason 
                 WHERE id = :id AND user_id = :user_id AND status = 'pending'
             ");
-            $stmt->execute([
-                'start_date' => $start_date,
-                'end_date' => $end_date,
-                'reason' => $reason,
-                'id' => $request_id,
-                'user_id' => $user_id,
-            ]);
-
-            $success = "Demande mise à jour avec succès.";
+            $stmt->execute(['start_date' => $start_date, 'end_date' => $end_date, 'reason' => $reason, 'id' => $request_id, 'user_id' => $user_id]);
             header('Location: request_leave.php');
             exit;
         }
     }
 }
+
+$page_title = 'Modifier ma Demande de Congé - PlanningCo';
+require_once '../includes/head.php';
+require_once '../includes/header.php';
 ?>
 
-<?php require_once '../includes/head.php'; ?>
-<?php require_once '../includes/header.php'; ?>
-
 <div class="max-w-xl mx-auto mt-10 px-4 sm:px-6 py-6 bg-white rounded shadow">
-    <h1 class="text-xl sm:text-2xl font-bold mb-6">Modifier ma demande de congé</h1>
+    <h1 class="text-xl sm:text-2xl font-bold mb-6">Modifier ma demande de cong&eacute;</h1>
 
     <?php if ($error): ?>
-        <div class="mb-4 p-3 bg-red-200 text-red-800 rounded text-sm"><?= htmlspecialchars($error) ?></div>
+        <div class="mb-4 p-3 bg-red-200 text-red-800 rounded text-sm"><?= h($error) ?></div>
     <?php endif; ?>
-
     <?php if ($success): ?>
-        <div class="mb-4 p-3 bg-green-200 text-green-800 rounded text-sm"><?= htmlspecialchars($success) ?></div>
+        <div class="mb-4 p-3 bg-green-200 text-green-800 rounded text-sm"><?= h($success) ?></div>
     <?php endif; ?>
 
     <form method="POST" novalidate class="space-y-4">
         <div>
-            <label for="start_date" class="block mb-1 font-semibold text-sm">Date de début *</label>
-            <input
-                type="date"
-                id="start_date"
-                name="start_date"
-                required
+            <label for="start_date" class="block mb-1 font-semibold text-sm">Date de d&eacute;but *</label>
+            <input type="date" id="start_date" name="start_date" required
                 class="w-full p-2 border border-gray-300 rounded"
-                value="<?= htmlspecialchars($_POST['start_date'] ?? $request['start_date']) ?>"
-                min="<?= $today ?>"
-            >
+                value="<?= h($_POST['start_date'] ?? $request['start_date']) ?>"
+                min="<?= h($today) ?>">
         </div>
-
         <div>
             <label for="end_date" class="block mb-1 font-semibold text-sm">Date de fin *</label>
-            <input
-                type="date"
-                id="end_date"
-                name="end_date"
-                required
+            <input type="date" id="end_date" name="end_date" required
                 class="w-full p-2 border border-gray-300 rounded"
-                value="<?= htmlspecialchars($_POST['end_date'] ?? $request['end_date']) ?>"
-                min="<?= $today ?>"
-            >
+                value="<?= h($_POST['end_date'] ?? $request['end_date']) ?>"
+                min="<?= h($today) ?>">
         </div>
-
         <div>
             <label for="reason" class="block mb-1 font-semibold text-sm">Motif</label>
-            <textarea
-                id="reason"
-                name="reason"
-                rows="4"
+            <textarea id="reason" name="reason" rows="4"
                 class="w-full p-2 border border-gray-300 rounded"
-                placeholder="(facultatif)"
-            ><?= htmlspecialchars($_POST['reason'] ?? $request['reason']) ?></textarea>
+                placeholder="(facultatif)"><?= h($_POST['reason'] ?? $request['reason']) ?></textarea>
         </div>
-
         <div class="flex flex-col sm:flex-row justify-between gap-4 mt-6">
             <a href="request_leave.php" class="w-full sm:w-auto text-center px-4 py-2 bg-gray-300 rounded hover:bg-gray-400 transition">Annuler</a>
             <button type="submit" class="w-full sm:w-auto text-center px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 transition">Enregistrer</button>
