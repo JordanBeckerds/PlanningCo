@@ -1,12 +1,11 @@
 <?php
 session_start();
 require_once '../includes/db.php';
+require_once '../includes/auth.php';
+require_once '../includes/functions.php';
+require_admin();
 
-if (!isset($_SESSION['user_id']) || $_SESSION['user_role'] !== 'admin') {
-    header('Location: login.php');
-    exit;
-}
-
+$page_title = 'Ajouter un Shift - PlanningCo';
 require_once '../includes/head.php';
 require_once '../includes/header.php';
 ?>
@@ -25,7 +24,7 @@ require_once '../includes/header.php';
         </div>
 
         <div class="mb-4">
-            <label for="start_time" class="block text-sm font-medium mb-2">Heure de début :</label>
+            <label for="start_time" class="block text-sm font-medium mb-2">Heure de d&eacute;but :</label>
             <input type="time" name="start_time" id="start_time" required
                 class="w-full px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500">
         </div>
