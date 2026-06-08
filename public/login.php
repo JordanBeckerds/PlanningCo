@@ -1,14 +1,11 @@
 <?php
 session_start();
 
+$page_title = 'Connexion - PlanningCo';
 require_once '../includes/head.php';
-
-$page_title = "Connexion - PlanningCo";
-
 require_once '../includes/header.php';
 
-// Récupérer message d'erreur ou succès depuis la session (ex: login_action.php)
-$error = $_SESSION['error'] ?? null;
+$error   = $_SESSION['error']   ?? null;
 $success = $_SESSION['success'] ?? null;
 unset($_SESSION['error'], $_SESSION['success']);
 ?>
@@ -47,6 +44,4 @@ unset($_SESSION['error'], $_SESSION['success']);
 
 </div>
 
-<?php
-require_once '../includes/footer.php';
-?>
+<?php require_once '../includes/footer.php'; ?>

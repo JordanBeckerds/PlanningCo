@@ -1,47 +1,42 @@
 <?php
 session_start();
-
-require_once '../includes/head.php';
-require_once '../includes/header.php';
-
-// Vérification d’authentification
-if (!isset($_SESSION['user_id']) || $_SESSION['user_role'] !== 'admin') {
-    header('Location: login.php');
-    exit;
-}
-
-$page_title = "Gestion des utilisateurs - PlanningCo";
-
 require_once '../includes/db.php';
+require_once '../includes/auth.php';
+require_once '../includes/functions.php';
+require_admin();
 
-// Récupérer tous les utilisateurs avec leur département et la couleur
+$page_title = 'Gestion des utilisateurs - PlanningCo';
+
 try {
     $stmt = $pdo->query("
-        SELECT users.id, users.name, users.email, users.role, users.hpw,
-               departments.name AS department_name, departments.color AS department_color
-        FROM users
-        LEFT JOIN departments ON users.department_id = departments.id
-        ORDER BY departments.name, 
-                 CASE WHEN users.role = 'manager' THEN 0 ELSE 1 END, 
-                 users.name
+        SELECT u.id, u.name, u.email, u.role, u.hpw,
+               d.name AS department_name, d.color AS department_color
+        FROM users u
+        LEFT JOIN departments d ON u.department_id = d.id
+        ORDER BY d.name,
+                 CASE WHEN u.role = 'admin' THEN 0 ELSE 1 END,
+                 u.name
     ");
-    $users = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $users = $stmt->fetchAll();
 } catch (PDOException $e) {
-    die("Erreur lors de la récupération des utilisateurs.");
+    error_log('manage_users: ' . $e->getMessage());
+    $users = [];
 }
 
-// Organiser les utilisateurs par département
 $departments = [];
 foreach ($users as $user) {
-    $dept = $user['department_name'] ?? 'Aucun';
+    $dept = $user['department_name'] ?? 'Aucun département';
     if (!isset($departments[$dept])) {
         $departments[$dept] = [
-            'color' => $user['department_color'] ?? 'CCCCCC', // fallback gray
+            'color' => $user['department_color'] ?? '#cccccc',
             'users' => []
         ];
     }
     $departments[$dept]['users'][] = $user;
 }
+
+require_once '../includes/head.php';
+require_once '../includes/header.php';
 ?>
 
 <div class="max-w-6xl mx-auto mt-10 px-4 min-h-[75vh]">
@@ -52,21 +47,21 @@ foreach ($users as $user) {
     </a>
 
     <?php if (empty($users)): ?>
-        <div class="text-center py-6 text-gray-500">Aucun utilisateur trouvé.</div>
+        <div class="text-center py-6 text-gray-500">Aucun utilisateur trouv&eacute;.</div>
     <?php else: ?>
         <?php foreach ($departments as $deptName => $deptData): ?>
-            <h2 class="text-xl font-semibold mb-3" style="color:#<?= htmlspecialchars($deptData['color']) ?>">
-                <?= htmlspecialchars($deptName) ?>
+            <h2 class="text-xl font-semibold mb-3" style="color:<?= h($deptData['color']) ?>">
+                <?= h($deptName) ?>
             </h2>
 
-            <!-- Version Desktop -->
-            <div class="hidden sm:table w-full bg-white rounded shadow overflow-hidden mb-6">
+            <!-- Desktop -->
+            <div class="hidden sm:block w-full bg-white rounded shadow overflow-hidden mb-6">
                 <table class="min-w-full">
                     <thead class="bg-indigo-600 text-white">
                         <tr>
                             <th class="text-left py-3 px-4">Nom</th>
                             <th class="text-left py-3 px-4">Email</th>
-                            <th class="text-left py-3 px-4">Rôle</th>
+                            <th class="text-left py-3 px-4">R&ocirc;le</th>
                             <th class="text-left py-3 px-4">HPW</th>
                             <th class="text-center py-3 px-4">Actions</th>
                         </tr>
@@ -74,13 +69,13 @@ foreach ($users as $user) {
                     <tbody>
                         <?php foreach ($deptData['users'] as $user): ?>
                         <tr class="border-b hover:bg-gray-50">
-                            <td class="py-3 px-4"><?= htmlspecialchars($user['name']) ?></td>
-                            <td class="py-3 px-4"><?= htmlspecialchars($user['email']) ?></td>
-                            <td class="py-3 px-4 capitalize"><?= htmlspecialchars($user['role']) ?></td>
-                            <td class="py-3 px-4"><?= htmlspecialchars($user['hpw'] ?? '-') ?></td>
+                            <td class="py-3 px-4"><?= h($user['name']) ?></td>
+                            <td class="py-3 px-4"><?= h($user['email']) ?></td>
+                            <td class="py-3 px-4 capitalize"><?= h($user['role']) ?></td>
+                            <td class="py-3 px-4"><?= h((string)($user['hpw'] ?? '-')) ?></td>
                             <td class="py-3 px-4 text-center space-x-2">
-                                <a href="edit_user.php?id=<?= $user['id'] ?>" class="text-indigo-600 hover:underline">Modifier</a>
-                                <a href="delete_user.php?id=<?= $user['id'] ?>" onclick="return confirm('Voulez-vous vraiment supprimer cet utilisateur ?');" class="text-red-600 hover:underline">Supprimer</a>
+                                <a href="edit_user.php?id=<?= (int)$user['id'] ?>" class="text-indigo-600 hover:underline">Modifier</a>
+                                <a href="delete_user.php?id=<?= (int)$user['id'] ?>" onclick="return confirm('Voulez-vous vraiment supprimer cet utilisateur ?');" class="text-red-600 hover:underline">Supprimer</a>
                             </td>
                         </tr>
                         <?php endforeach; ?>
@@ -88,17 +83,17 @@ foreach ($users as $user) {
                 </table>
             </div>
 
-            <!-- Version Mobile -->
+            <!-- Mobile -->
             <div class="sm:hidden space-y-4 mb-6">
                 <?php foreach ($deptData['users'] as $user): ?>
-                    <div class="bg-white p-4 rounded shadow border-l-4" style="border-color:#<?= htmlspecialchars($deptData['color']) ?>">
-                        <p class="font-semibold text-indigo-700 mb-2"><?= htmlspecialchars($user['name']) ?></p>
-                        <p><span class="font-medium">Email :</span> <?= htmlspecialchars($user['email']) ?></p>
-                        <p><span class="font-medium">Rôle :</span> <?= htmlspecialchars($user['role']) ?></p>
-                        <p><span class="font-medium">HPW :</span> <?= htmlspecialchars($user['hpw'] ?? '-') ?></p>
+                    <div class="bg-white p-4 rounded shadow border-l-4" style="border-color:<?= h($deptData['color']) ?>">
+                        <p class="font-semibold text-indigo-700 mb-2"><?= h($user['name']) ?></p>
+                        <p><span class="font-medium">Email :</span> <?= h($user['email']) ?></p>
+                        <p><span class="font-medium">R&ocirc;le :</span> <?= h($user['role']) ?></p>
+                        <p><span class="font-medium">HPW :</span> <?= h((string)($user['hpw'] ?? '-')) ?></p>
                         <div class="mt-3 flex justify-end space-x-4 text-sm">
-                            <a href="edit_user.php?id=<?= $user['id'] ?>" class="text-indigo-600 hover:underline">Modifier</a>
-                            <a href="delete_user.php?id=<?= $user['id'] ?>" onclick="return confirm('Voulez-vous vraiment supprimer cet utilisateur ?');" class="text-red-600 hover:underline">Supprimer</a>
+                            <a href="edit_user.php?id=<?= (int)$user['id'] ?>" class="text-indigo-600 hover:underline">Modifier</a>
+                            <a href="delete_user.php?id=<?= (int)$user['id'] ?>" onclick="return confirm('Voulez-vous vraiment supprimer cet utilisateur ?');" class="text-red-600 hover:underline">Supprimer</a>
                         </div>
                     </div>
                 <?php endforeach; ?>
@@ -107,6 +102,4 @@ foreach ($users as $user) {
     <?php endif; ?>
 </div>
 
-<?php
-require_once '../includes/footer.php';
-?>
+<?php require_once '../includes/footer.php'; ?>
