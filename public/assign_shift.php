@@ -1,11 +1,9 @@
 <?php
 session_start();
 require_once '../includes/db.php';
-
-if (!isset($_SESSION['user_id']) || $_SESSION['user_role'] !== 'admin') {
-    header('Location: ../public/login.php');
-    exit;
-}
+require_once '../includes/auth.php';
+require_once '../includes/functions.php';
+require_admin();
 
 $stmtUsers = $pdo->prepare("SELECT id, name, email FROM users WHERE role = 'employee' ORDER BY name");
 $stmtUsers->execute();
@@ -24,16 +22,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $recurring = isset($_POST['recurring']) ? true : false;
 
     if (empty($user_ids) || empty($dates) || empty($shifts_per_date)) {
-        $message = '<p class="text-red-600 font-semibold">Veuillez sélectionner au moins un employé, une date et des shifts par date.</p>';
+        $message = '<p class="text-red-600 font-semibold">Veuillez s&eacute;lectionner au moins un employ&eacute;, une date et des shifts par date.</p>';
     } else {
         try {
             $pdo->beginTransaction();
             $weeksCount = $recurring ? 10 : 1;
 
             foreach ($dates as $index => $date) {
-                if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $date)) throw new Exception("Date invalide : $date");
+                if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $date)) throw new Exception("Date invalide : " . h($date));
                 $shift_ids_for_date = $shifts_per_date[$index] ?? [];
-                if (empty($shift_ids_for_date) || !is_array($shift_ids_for_date)) throw new Exception("Aucun shift sélectionné pour la date $date");
+                if (empty($shift_ids_for_date) || !is_array($shift_ids_for_date)) throw new Exception("Aucun shift s&eacute;lectionn&eacute; pour la date $date");
 
                 foreach ($user_ids as $user_id) {
                     for ($i = 0; $i < $weeksCount; $i++) {
@@ -51,17 +49,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
 
             $pdo->commit();
-            $message = '<p class="text-green-600 font-semibold">Shifts assignés avec succès.</p>';
+            $message = '<p class="text-green-600 font-semibold">Shifts assign&eacute;s avec succ&egrave;s.</p>';
         } catch (Exception $e) {
             $pdo->rollBack();
-            $message = '<p class="text-red-600 font-semibold">Erreur : ' . htmlspecialchars($e->getMessage()) . '</p>';
+            $message = '<p class="text-red-600 font-semibold">Erreur : ' . h($e->getMessage()) . '</p>';
         }
     }
 }
-?>
 
-<?php require_once '../includes/head.php'; ?>
-<?php require_once '../includes/header.php'; ?>
+$page_title = 'Assigner des Shifts - PlanningCo';
+require_once '../includes/head.php';
+require_once '../includes/header.php';
+?>
 
 <div class="max-w-6xl mx-auto mt-12 p-6 bg-white rounded-2xl shadow-lg">
     <h1 class="text-2xl md:text-3xl font-bold mb-8 text-center md:text-left text-indigo-700">Assigner des shifts</h1>
@@ -71,28 +70,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <form method="POST" class="space-y-8" id="assignShiftForm">
         <!-- Employee Search -->
         <div class="space-y-2">
-            <label for="employeeSearch" class="block font-semibold text-gray-700">Chercher un employé :</label>
+            <label for="employeeSearch" class="block font-semibold text-gray-700">Chercher un employ&eacute; :</label>
             <input type="text" id="employeeSearch" placeholder="Nom ou email..." 
                 class="w-full border border-gray-300 rounded-lg p-3 focus:ring-indigo-500 focus:border-indigo-500" />
         </div>
 
         <!-- Employees Select -->
         <div class="space-y-2">
-            <label for="user_ids" class="block font-semibold text-gray-700">Employés :</label>
+            <label for="user_ids" class="block font-semibold text-gray-700">Employ&eacute;s :</label>
             <select name="user_ids[]" id="user_ids" multiple required 
                 class="w-full border border-gray-300 rounded-lg p-3 h-36 text-sm focus:ring-indigo-500 focus:border-indigo-500">
                 <?php foreach ($employees as $employee): ?>
-                    <option value="<?= htmlspecialchars($employee['id']) ?>">
-                        <?= htmlspecialchars($employee['name']) ?> (<?= htmlspecialchars($employee['email']) ?>)
+                    <option value="<?= h($employee['id']) ?>">
+                        <?= h($employee['name']) ?> (<?= h($employee['email']) ?>)
                     </option>
                 <?php endforeach; ?>
             </select>
-            <p class="text-xs text-gray-500">Ctrl / Cmd pour multi-sélection</p>
+            <p class="text-xs text-gray-500">Ctrl / Cmd pour multi-s&eacute;lection</p>
         </div>
 
         <!-- Dates & Shifts -->
         <div>
-            <label class="block font-semibold text-gray-700 mb-3">Dates & Shifts :</label>
+            <label class="block font-semibold text-gray-700 mb-3">Dates &amp; Shifts :</label>
             <div id="datesShiftsContainer" class="space-y-6">
                 <div class="date-shift-block border rounded-xl p-5 bg-indigo-50 shadow-sm" data-index="0">
                     <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-4">
@@ -105,13 +104,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <select name="shifts_per_date[0][]" multiple required 
                         class="shift-select w-full border border-gray-300 rounded-lg p-3 h-44 overflow-auto text-sm focus:ring-indigo-500 focus:border-indigo-500">
                         <?php foreach ($shifts as $shift): ?>
-                            <option value="<?= htmlspecialchars($shift['id']) ?>">
-                                <?= htmlspecialchars($shift['name']) ?> (<?= substr($shift['start_time'], 0, 5) ?> - <?= substr($shift['end_time'], 0, 5) ?>)
+                            <option value="<?= h($shift['id']) ?>">
+                                <?= h($shift['name']) ?> (<?= h(substr($shift['start_time'], 0, 5)) ?> - <?= h(substr($shift['end_time'], 0, 5)) ?>)
                             </option>
                         <?php endforeach; ?>
                     </select>
 
-                    <p class="text-xs text-gray-500 mt-2">Ctrl / Cmd pour multi-sélection</p>
+                    <p class="text-xs text-gray-500 mt-2">Ctrl / Cmd pour multi-s&eacute;lection</p>
                 </div>
             </div>
 
@@ -123,7 +122,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <!-- Recurring -->
         <div class="flex items-center gap-3">
             <input type="checkbox" name="recurring" id="recurring" value="1" class="h-4 w-4 accent-indigo-600">
-            <label for="recurring" class="font-semibold text-gray-700">Récurrent chaque semaine (10 semaines)</label>
+            <label for="recurring" class="font-semibold text-gray-700">R&eacute;current chaque semaine (10 semaines)</label>
         </div>
 
         <button type="submit" class="mt-6 w-full md:w-auto bg-indigo-600 text-white px-8 py-3 rounded-xl hover:bg-indigo-700 transition-colors font-semibold">
@@ -138,7 +137,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const container = document.getElementById('datesShiftsContainer');
     const addBtn = document.getElementById('addDateShiftBtn');
 
-    // Add new date-shift block
     addBtn.addEventListener('click', () => {
         const template = container.querySelector('.date-shift-block');
         const clone = template.cloneNode(true);
@@ -157,7 +155,6 @@ document.addEventListener('DOMContentLoaded', () => {
         dateShiftIndex++;
     });
 
-    // Remove date-shift block
     container.addEventListener('click', e => {
         if (e.target.classList.contains('removeDateBtn')) {
             if (container.children.length > 1) e.target.closest('.date-shift-block').remove();
@@ -165,7 +162,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // Shift search
     container.addEventListener('input', e => {
         if (e.target.classList.contains('shiftSearchInput')) {
             const filter = e.target.value.toLowerCase();
@@ -174,7 +170,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // Employee search
     const empSearch = document.getElementById('employeeSearch');
     const userSelect = document.getElementById('user_ids');
     empSearch.addEventListener('input', () => {

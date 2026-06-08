@@ -1,17 +1,14 @@
 <?php
 session_start();
+require_once '../includes/db.php';
+require_once '../includes/auth.php';
+require_once '../includes/functions.php';
+require_login();
 
 if (!isset($_GET['view']) && !isset($_GET['year']) && !isset($_GET['month']) && !isset($_GET['week'])) {
     $currentYear = date('Y');
     $currentMonth = date('m');
     header("Location: ?view=month&year=$currentYear&month=$currentMonth");
-    exit;
-}
-
-require_once '../includes/db.php';
-
-if (!isset($_SESSION['user_id'])) {
-    header('Location: ../public/login.php');
     exit;
 }
 
@@ -75,13 +72,13 @@ function getWeekFromDate($dateStr) {
     $date = DateTime::createFromFormat('Y-m-d', $dateStr);
     return (int)$date->format('W');
 }
+
+$page_title = 'Mon Planning - PlanningCo';
+require_once '../includes/head.php';
+require_once '../includes/header.php';
 ?>
 
-<?php require_once '../includes/head.php'; ?>
-<?php require_once '../includes/header.php'; ?>
-
 <style>
-/* myRHIS style dots */
 .shift-dots {
     display: flex;
     gap: 3px;
@@ -93,17 +90,13 @@ function getWeekFromDate($dateStr) {
 .shift-dot {
     width: 12px;
     height: 12px;
-    background-color: #4F46E5; /* Indigo-600 */
+    background-color: #4F46E5;
     border-radius: 50%;
 }
-
-/* Month view */
 .month-table td {
-    height: 100px; /* taller day cells */
+    height: 100px;
     vertical-align: top;
 }
-
-/* Prev/Next buttons container */
 .nav-buttons {
     display: flex;
     justify-content: center;
@@ -111,7 +104,6 @@ function getWeekFromDate($dateStr) {
     flex-wrap: wrap;
     margin-top: 0.5rem;
 }
-
 .nav-buttons a {
     flex: 1 1 120px;
     text-align: center;
@@ -119,17 +111,14 @@ function getWeekFromDate($dateStr) {
     border: 1px solid #ddd;
     border-radius: 0.375rem;
     background-color: #fff;
-    color: #374151; /* gray-700 */
+    color: #374151;
     text-decoration: none;
     font-weight: 600;
     transition: background-color 0.2s;
 }
-
 .nav-buttons a:hover {
-    background-color: #e0e7ff; /* indigo-100 */
+    background-color: #e0e7ff;
 }
-
-/* Week view - mobile vertical stacked days */
 @media (max-width: 640px) {
     .week-table {
         display: block;
@@ -154,11 +143,9 @@ function getWeekFromDate($dateStr) {
         font-weight: 700;
         margin-bottom: 0.5rem;
         font-size: 1.1rem;
-        color: #4F46E5; /* indigo-600 */
+        color: #4F46E5;
     }
 }
-
-/* Ensure month day link fills whole cell */
 .month-table td a {
     display: block;
     width: 100%;
@@ -166,8 +153,6 @@ function getWeekFromDate($dateStr) {
     text-decoration: none;
     color: inherit;
 }
-
-/* Hover for month day */
 .month-table td a:hover {
     background-color: #e0e7ff;
     border-radius: 0.25rem;
@@ -179,15 +164,14 @@ function getWeekFromDate($dateStr) {
 
         <h1 class="text-xl sm:text-2xl font-bold mb-4 sm:mb-6">Mon planning</h1>
 
-        <!-- View toggle & navigation -->
         <div class="mb-4 flex flex-wrap sm:flex-nowrap items-center space-x-0 sm:space-x-4 space-y-2 sm:space-y-0 flex-col">
 
             <div class="flex gap-12 mb-4">
-                <a href="?view=month&year=<?= $year ?>&month=<?= $month ?>" 
+                <a href="?view=month&year=<?= h($year) ?>&month=<?= h($month) ?>" 
                     class="px-3 py-1 rounded text-sm sm:text-base <?= $view === 'month' ? 'bg-indigo-600 text-white' : 'bg-gray-200' ?> min-w-[15vw] flex items-center justify-center md:min-w-[5vw]">
                     Mois
                 </a>
-                <a href="?view=week&year=<?= $year ?>&week=<?= $week ?>" 
+                <a href="?view=week&year=<?= h($year) ?>&week=<?= h($week) ?>" 
                     class="px-3 py-1 rounded text-sm sm:text-base <?= $view === 'week' ? 'bg-indigo-600 text-white' : 'bg-gray-200' ?> min-w-[15vw] flex items-center justify-center md:min-w-[5vw]">
                     Semaine
                 </a>
@@ -201,12 +185,12 @@ function getWeekFromDate($dateStr) {
                     list($nextYear, $nextMonth) = nextMonth($year, $month);
                 ?>
                     <div class="flex items-center justify-center gap-2">
-                        <a href="?view=month&year=<?= $prevYear ?>&month=<?= $prevMonth ?>" 
-                            aria-label="Mois précédent" class="text-xs md:text-base min-w-[35%] md:min-w-[12vw] flex items-center justify-center">
-                            &laquo; Précédent
+                        <a href="?view=month&year=<?= h($prevYear) ?>&month=<?= h($prevMonth) ?>" 
+                            aria-label="Mois pr&eacute;c&eacute;dent" class="text-xs md:text-base min-w-[35%] md:min-w-[12vw] flex items-center justify-center">
+                            &laquo; Pr&eacute;c&eacute;dent
                         </a>
-                        <span class="font-semibold text-lg whitespace-nowrap px-3 py-1"><?= sprintf("%04d-%02d", $year, $month) ?></span>
-                        <a href="?view=month&year=<?= $nextYear ?>&month=<?= $nextMonth ?>" 
+                        <span class="font-semibold text-lg whitespace-nowrap px-3 py-1"><?= h(sprintf("%04d-%02d", $year, $month)) ?></span>
+                        <a href="?view=month&year=<?= h($nextYear) ?>&month=<?= h($nextMonth) ?>" 
                             aria-label="Mois suivant" class="text-xs md:text-base min-w-[35%] md:min-w-[12vw] flex items-center justify-center">
                             Suivant &raquo;
                         </a>
@@ -217,15 +201,15 @@ function getWeekFromDate($dateStr) {
                     list($nextYear, $nextWeek) = nextWeek($year, $week);
                 ?>
                     <div class="flex items-center justify-center gap-2">
-                        <a href="?view=week&year=<?= $prevYear ?>&week=<?= $prevWeek ?>" 
-                            aria-label="Semaine précédente" class="text-xs md:text-base min-w-[35%] md:min-w-[6vw] flex items-center justify-center">
-                            &laquo; Précédent
+                        <a href="?view=week&year=<?= h($prevYear) ?>&week=<?= h($prevWeek) ?>" 
+                            aria-label="Semaine pr&eacute;c&eacute;dente" class="text-xs md:text-base min-w-[35%] md:min-w-[6vw] flex items-center justify-center">
+                            &laquo; Pr&eacute;c&eacute;dent
                         </a>
                         <div class="px-3 py-1 flex flex-col items-center justify-center">
-                            <span class="font-semibold text-lg whitespace-nowrap text-sm"><?= $year ?></span>
-                            <span class="font-semibold text-lg whitespace-nowrap text-sm">Semaine <?= $week ?></span>
+                            <span class="font-semibold text-lg whitespace-nowrap text-sm"><?= h($year) ?></span>
+                            <span class="font-semibold text-lg whitespace-nowrap text-sm">Semaine <?= h($week) ?></span>
                         </div>
-                        <a href="?view=week&year=<?= $nextYear ?>&week=<?= $nextWeek ?>" 
+                        <a href="?view=week&year=<?= h($nextYear) ?>&week=<?= h($nextWeek) ?>" 
                             aria-label="Semaine suivante" class="text-xs md:text-base min-w-[35%] md:min-w-[6vw] flex items-center justify-center">
                             Suivant &raquo;
                         </a>
@@ -261,7 +245,7 @@ function getWeekFromDate($dateStr) {
                 <thead class="bg-indigo-100">
                     <tr>
                         <?php foreach ($dayLabels as $label): ?>
-                            <th class="border border-gray-300 p-2 text-center"><?= $label ?></th>
+                            <th class="border border-gray-300 p-2 text-center"><?= h($label) ?></th>
                         <?php endforeach; ?>
                     </tr>
                 </thead>
@@ -283,12 +267,11 @@ function getWeekFromDate($dateStr) {
 
                         $link = "?view=week&year=" . $currentDate->format('Y') . "&week=$weekNum";
 
-                        // Tooltip text for shift count (only if shifts)
                         $tooltip = $shiftCount > 0 ? "$shiftCount shift(s) worked" : '';
 
                         echo '<td class="border border-gray-300 p-1 align-top ' . ($isCurrentMonth ? '' : 'text-gray-400') . '">';
-                        echo '<a href="' . $link . '" title="' . htmlspecialchars($tooltip) . '" class="flex flex-col h-full justify-between">';
-                        echo '<span class="font-semibold">' . $dayNum . '</span>';
+                        echo '<a href="' . h($link) . '" title="' . h($tooltip) . '" class="flex flex-col h-full justify-between">';
+                        echo '<span class="font-semibold">' . h($dayNum) . '</span>';
 
                         if ($shiftCount > 0) {
                             echo '<div class="shift-dots">';
@@ -312,7 +295,6 @@ function getWeekFromDate($dateStr) {
 
     <?php elseif ($view === 'week'):
 
-    // Get first day of the ISO week
     $dto = new DateTime();
     $dto->setISODate($year, $week);
     $startOfWeek = clone $dto;
@@ -322,7 +304,6 @@ function getWeekFromDate($dateStr) {
     $shiftsByDate = getUserShifts($pdo, $user_id, $startOfWeek->format('Y-m-d'), $endOfWeek->format('Y-m-d'));
     $dayLabels = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'];
 
-    // Define expected weekly hours (adjust this as needed)
     $expectedWeeklyHours = 35;
 ?>
 
@@ -331,9 +312,9 @@ function getWeekFromDate($dateStr) {
         <thead>
             <tr class="bg-indigo-100">
                 <?php foreach ($dayLabels as $label): ?>
-                    <th class="border border-gray-300 p-2 text-center"><?= $label ?></th>
+                    <th class="border border-gray-300 p-2 text-center"><?= h($label) ?></th>
                 <?php endforeach; ?>
-                <th class="border border-gray-300 p-2 text-center">Total H</th> <!-- New header -->
+                <th class="border border-gray-300 p-2 text-center">Total H</th>
             </tr>
         </thead>
         <tbody>
@@ -345,16 +326,15 @@ function getWeekFromDate($dateStr) {
                 for ($i = 0; $i < 7; $i++) {
                     $dateStr = $dateIter->format('Y-m-d');
                     echo '<td class="border border-gray-300 p-2 align-top">';
-                    echo '<div class="font-semibold mb-1">' . $dateIter->format('d/m') . '</div>';
+                    echo '<div class="font-semibold mb-1">' . h($dateIter->format('d/m')) . '</div>';
 
                     if (isset($shiftsByDate[$dateStr])) {
                         foreach ($shiftsByDate[$dateStr] as $shift) {
                             echo '<div class="text-xs text-indigo-700 border border-indigo-300 rounded p-1 mb-1">';
-                            echo htmlspecialchars($shift['name']) . '<br>';
-                            echo htmlspecialchars($shift['start_time']) . ' - ' . htmlspecialchars($shift['end_time']);
+                            echo h($shift['name']) . '<br>';
+                            echo h($shift['start_time']) . ' - ' . h($shift['end_time']);
                             echo '</div>';
 
-                            // Calculate total hours for the week
                             $start = new DateTime($shift['start_time']);
                             $end = new DateTime($shift['end_time']);
                             $interval = $start->diff($end);
@@ -365,7 +345,6 @@ function getWeekFromDate($dateStr) {
                     $dateIter->modify('+1 day');
                 }
 
-                // Determine color for total hours
                 if ($totalHours < $expectedWeeklyHours) {
                     $colorClass = 'bg-orange-300';
                 } elseif ($totalHours == $expectedWeeklyHours) {
@@ -374,9 +353,8 @@ function getWeekFromDate($dateStr) {
                     $colorClass = 'bg-red-300';
                 }
 
-                // Add total hours cell at the end
-                echo '<td class="border border-gray-300 p-2 text-center ' . $colorClass . ' font-semibold">';
-                echo round($totalHours, 2) . 'h';
+                echo '<td class="border border-gray-300 p-2 text-center ' . h($colorClass) . ' font-semibold">';
+                echo h(round($totalHours, 2)) . 'h';
                 echo '</td>';
                 ?>
             </tr>
@@ -394,12 +372,12 @@ function getWeekFromDate($dateStr) {
         $dateStr = $dateIter->format('Y-m-d');
     ?>
         <div class="border border-gray-300 rounded p-4 mb-4 bg-gray-50">
-            <div class="font-semibold text-indigo-600 mb-2"><?= $dayLabels[$i] . ' ' . $dateIter->format('d/m') ?></div>
+            <div class="font-semibold text-indigo-600 mb-2"><?= h($dayLabels[$i] . ' ' . $dateIter->format('d/m')) ?></div>
             <?php if (isset($shiftsByDate[$dateStr])): ?>
                 <?php foreach ($shiftsByDate[$dateStr] as $shift): ?>
                     <div class="text-sm text-indigo-700 border border-indigo-300 rounded p-2 mb-2">
-                        <?= htmlspecialchars($shift['name']) ?><br>
-                        <?= htmlspecialchars($shift['start_time']) ?> - <?= htmlspecialchars($shift['end_time']) ?>
+                        <?= h($shift['name']) ?><br>
+                        <?= h($shift['start_time']) ?> - <?= h($shift['end_time']) ?>
                     </div>
                     <?php
                         $start = new DateTime($shift['start_time']);
@@ -416,7 +394,6 @@ function getWeekFromDate($dateStr) {
         $dateIter->modify('+1 day');
     endfor;
 
-    // Mobile total hours display
     if ($totalHours < $expectedWeeklyHours) {
         $colorClass = 'bg-orange-300';
     } elseif ($totalHours == $expectedWeeklyHours) {
@@ -425,8 +402,8 @@ function getWeekFromDate($dateStr) {
         $colorClass = 'bg-red-300';
     }
     ?>
-    <div class="border border-gray-300 rounded p-4 mb-4 text-center font-semibold <?= $colorClass ?>">
-        Total semaine: <?= round($totalHours, 2) ?>h
+    <div class="border border-gray-300 rounded p-4 mb-4 text-center font-semibold <?= h($colorClass) ?>">
+        Total semaine: <?= h(round($totalHours, 2)) ?>h
     </div>
 </div>
 
