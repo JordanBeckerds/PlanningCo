@@ -1,8 +1,5 @@
-</main>
-<footer class="mt-[10vh] bg-gray-200 text-gray-700 py-4">
-    <div class="container mx-auto px-4 text-center text-sm">
-        &copy; <?= date('Y') ?> PlanningCo - Tous droits réservés
-    </div>
+<footer class="mt-auto bg-white border-t border-gray-200 py-4 text-center text-xs text-gray-400">
+  &copy; <?= date('Y') ?> PlanningCo
 </footer>
 </body>
 </html>

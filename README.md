@@ -1,138 +1,87 @@
-# PLanningCo
+# PlanningCo
 
-PLanningCo is a web-based planning and scheduling application designed to manage employee timetables efficiently. It provides a clean interface to view and edit schedules, with data stored in a MySQL database.
-
----
-
-## Table of Contents
-
-1. [Project Overview](#project-overview)
-2. [Features](#features)
-3. [Technologies](#technologies)
-4. [Installation](#installation)
-5. [Database Setup](#database-setup)
-6. [Usage](#usage)
-7. [Folder Structure](#folder-structure)
-8. [Contributing](#contributing)
-9. [License](#license)
-
----
-
-## Project Overview
-
-PLanningCo allows administrators and team members to manage employee working hours:
-
-* View and edit schedules for each day of the week.
-* Organize shifts in a clear timetable layout.
-* Search for employees by name.
-
-All data is stored in a MySQL database using the included schema.
+Open-source employee schedule management platform. Give any team a clean, web-based timetable — shifts, leave requests, departments, and a role-based dashboard — with zero extra tooling.
 
 ---
 
 ## Features
 
-* Responsive timetable view (rows = employees, columns = days of the week).
-* Search/filter employees by name.
-* Data persistence with MySQL.
-* Database schema included (`schema.sql`) for quick setup.
+### Admin
+- **Schedule management** — weekly timetable grid, assign shifts to employees
+- **Shift library** — define shifts (name, start/end time, night-shift flag)
+- **Department management** — group employees by department, color-coded
+- **User management** — create / edit / delete employee and admin accounts
+- **Leave request review** — approve or deny requests, Congés Payés (CP) vs. unpaid
+
+### Employee
+- **Personal schedule** — view upcoming shifts
+- **Leave requests** — submit and track requests (pending / approved / denied)
+
+### Platform
+- Role-based access: `admin` and `employee`
+- Login with brute-force protection (5 failed attempts → 30-minute lockout)
+- Guided install wizard at `/setup/` — no CLI required
+- `.env`-based configuration
 
 ---
 
-## Technologies
+## Tech stack
 
-* **Backend**: PHP
-* **Database**: MySQL
-* **Frontend**: HTML, CSS, JavaScript
+| Layer | Technology |
+|-------|------------|
+| Backend | PHP 8+ |
+| Database | MySQL 5.7+ / MariaDB 10.4+ |
+| Frontend | Tailwind CSS (CDN), Lucide Icons, vanilla JS |
+| Hosting | Any PHP shared host |
 
----
-
-## Installation
-
-1. Clone the repository:
-
-   ```bash
-   git clone https://github.com/JordanBeckerds/PLanningCo.git
-   cd PLanningCo
-   ```
-
-2. Set up the database:
-
-   * Create a new MySQL database.
-   * Import the schema:
-
-     ```bash
-     mysql -u your_username -p your_database < schema.sql
-     ```
-
-3. Configure the database connection (update credentials in `config.php`).
-
-4. Start the PHP server:
-
-   ```bash
-   php -S localhost:8000
-   ```
-
-5. Open `http://localhost:8000` in your browser.
+Zero npm, zero build step.
 
 ---
 
-## Database Setup
+## Quick start
 
-The `schema.sql` file contains all necessary tables, including:
-
-* `users`: stores system users and their credentials.
-* `employees`: stores employee details.
-* `schedules`: stores working hours for each employee per day.
-
-> Ensure your MySQL user has permission to create tables and insert data.
-
----
-
-## Usage
-
-1. Open PLanningCo in your browser.
-2. Log in with your user account (if applicable).
-3. Navigate the timetable to view or edit schedules.
-4. Use the search bar to filter employees by name.
-
----
-
-## Folder Structure
-
-```
-PLanningCo/
-├─ schema.sql         # Database structure
-├─ index.php          # Main application
-├─ config.php         # Database configuration
-├─ assets/
-│   ├─ css/           # Stylesheets
-│   ├─ js/            # JavaScript scripts
-├─ uploads/           # Optional folder for files
-└─ README.md
+```bash
+git clone https://github.com/JordanBeckerds/PlanningCo.git
+cd PlanningCo
+cp .env.example .env   # fill in your DB credentials
+php -S localhost:8000
 ```
 
+Then visit `http://localhost:8000/setup/` and follow the wizard.
+
+See [INSTALL.md](INSTALL.md) for shared hosting and VPS instructions.
+
 ---
 
-## Contributing
+## Structure
 
-1. Fork the repository.
-2. Create a new branch:
-
-   ```bash
-   git checkout -b feature/your-feature
-   ```
-3. Commit your changes:
-
-   ```bash
-   git commit -am "Add feature"
-   ```
-4. Push to your branch and create a pull request.
+```
+PlanningCo/
+├── public/           # All pages (schedule, dashboard, leave, users…)
+├── actions/          # Form POST handlers
+├── includes/
+│   ├── db.php        # PDO connection (env-based, auto-redirects to setup)
+│   ├── auth.php      # require_login() / require_admin() / session helpers
+│   ├── functions.php # h(), format_date(), flash(), redirect()…
+│   ├── head.php      # HTML document opener + <head>
+│   ├── header.php    # <body> + navigation header
+│   └── footer.php    # closes </body></html>
+├── setup/
+│   └── index.php     # Guided install wizard
+├── sql/
+│   └── schema.sql    # Full database schema
+├── .env.example
+└── README.md
+```
 
 ---
 
 ## License
 
-This project is open-source under the [GPL-3.0 License](https://opensource.org/licenses/GPL-3.0).
+GPL-3.0 — see [LICENSE](LICENSE).
 
+---
 
+## Author
+
+Jordan Beckerds · [github.com/JordanBeckerds](https://github.com/JordanBeckerds)
