@@ -1,0 +1,61 @@
+name: planningco
+
+services:
+  app:
+    build: .
+    container_name: planningco_app
+    restart: unless-stopped
+    ports:
+      - "8503:80"
+    volumes:
+      - .:/var/www/html
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - planningco_net
+
+  db:
+    image: mysql:8.0
+    container_name: planningco_db
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASS}
+      MYSQL_DATABASE: ${DB_NAME}
+      MYSQL_USER: ${DB_USER}
+      MYSQL_PASSWORD: ${DB_PASS}
+    ports:
+      - "127.0.0.1:3308:3306"
+    volumes:
+      - planningco_db_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${DB_ROOT_PASS}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks:
+      - planningco_net
+
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin:latest
+    container_name: planningco_pma
+    restart: unless-stopped
+    ports:
+      - "8504:80"
+    environment:
+      PMA_HOST: db
+      PMA_PORT: 3306
+      PMA_ARBITRARY: 1
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - planningco_net
+
+volumes:
+  planningco_db_data:
+    driver: local
+
+networks:
+  planningco_net:
+    driver: bridge
